@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 import { services, Service } from '@/data/services';
 import ServiceCard from '@/components/ServiceCard';
@@ -25,6 +26,7 @@ const { width } = Dimensions.get('window');
 type Category = 'All' | 'Streaming' | 'AI' | 'Trading' | 'Internet';
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -57,7 +59,7 @@ export default function HomeScreen() {
       {/* Header with Gradient */}
       <LinearGradient
         colors={[Colors.primary, '#1E40AF']}
-        style={styles.header}
+        style={[styles.header, { paddingTop: insets.top + Spacing.md }]}
       >
         <View style={styles.headerTop}>
           <View>
@@ -162,7 +164,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingTop: Spacing.xxl + Spacing.lg,
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
     borderBottomLeftRadius: BorderRadius.xl,

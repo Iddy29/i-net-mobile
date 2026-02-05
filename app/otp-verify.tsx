@@ -6,19 +6,27 @@ import {
   TouchableOpacity,
   TextInput,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 
 export default function OTPVerifyScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(60);
   const inputs = useRef<Array<TextInput | null>>([]);
+
+  const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.back();
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -67,7 +75,22 @@ export default function OTPVerifyScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + Spacing.md },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Custom Back Button */}
+        <Animated.View entering={FadeInDown.duration(400)} style={styles.backButtonContainer}>
+          <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
+            <View style={styles.backButtonInner}>
+              <Ionicons name="chevron-back" size={24} color={Colors.primary} />
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
         <Animated.View entering={FadeInDown.duration(600)} style={styles.header}>
           {/* Icon */}
           <View style={styles.iconContainer}>
@@ -128,7 +151,7 @@ export default function OTPVerifyScreen() {
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -139,9 +162,25 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xxl + Spacing.xl,
+    paddingBottom: Spacing.xl,
+  },
+  backButtonContainer: {
+    marginBottom: Spacing.md,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.small,
+  },
+  backButtonInner: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     marginBottom: Spacing.xxl,

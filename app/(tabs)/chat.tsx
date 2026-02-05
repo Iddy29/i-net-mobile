@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTextGeneration } from '@fastshot/ai';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 
@@ -26,6 +27,7 @@ interface Message {
 }
 
 export default function ChatScreen() {
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
@@ -127,7 +129,7 @@ export default function ChatScreen() {
       <StatusBar barStyle="light-content" />
 
       {/* Header */}
-      <LinearGradient colors={[Colors.primary, '#1E40AF']} style={styles.header}>
+      <LinearGradient colors={[Colors.primary, '#1E40AF']} style={[styles.header, { paddingTop: insets.top + Spacing.md }]}>
         <View style={styles.headerContent}>
           <TouchableOpacity style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color={Colors.white} />
@@ -212,7 +214,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingTop: Spacing.xxl + Spacing.lg,
     paddingBottom: Spacing.lg,
     paddingHorizontal: Spacing.lg,
     borderBottomLeftRadius: BorderRadius.lg,

@@ -12,6 +12,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 
 interface MenuItemProps {
@@ -46,6 +47,7 @@ function MenuItem({ icon, title, subtitle, onPress, showArrow = true, danger = f
 
 export default function MenuScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const handlePress = (action: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -65,7 +67,7 @@ export default function MenuScreen() {
       {/* Header */}
       <LinearGradient
         colors={[Colors.primary, '#1E40AF']}
-        style={styles.header}
+        style={[styles.header, { paddingTop: insets.top + Spacing.md }]}
       >
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
@@ -200,7 +202,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingTop: Spacing.xxl + Spacing.lg,
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xl,
     borderBottomLeftRadius: BorderRadius.xl,

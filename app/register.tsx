@@ -15,10 +15,12 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -26,6 +28,11 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.back();
+  };
 
   const handleRegister = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -46,9 +53,21 @@ export default function RegisterScreen() {
         style={styles.container}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + Spacing.md },
+          ]}
           showsVerticalScrollIndicator={false}
         >
+          {/* Custom Back Button */}
+          <Animated.View entering={FadeInDown.duration(400)} style={styles.backButtonContainer}>
+            <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
+              <View style={styles.backButtonInner}>
+                <Ionicons name="chevron-back" size={24} color={Colors.primary} />
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+
           <Animated.View entering={FadeInDown.duration(600)} style={styles.header}>
             <Text style={styles.title}>Create Account</Text>
           </Animated.View>
@@ -186,8 +205,23 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xxl + Spacing.xl,
     paddingBottom: Spacing.xl,
+  },
+  backButtonContainer: {
+    marginBottom: Spacing.md,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.small,
+  },
+  backButtonInner: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     marginBottom: Spacing.xl,

@@ -11,11 +11,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 import { Order, OrderStatus, services } from '@/data/services';
 import { ServiceIcon } from '@/components/ServiceIcon';
 
 export default function OrdersScreen() {
+  const insets = useSafeAreaInsets();
   // Dummy orders data
   const [orders] = useState<Order[]>([
     {
@@ -88,7 +90,7 @@ export default function OrdersScreen() {
       {/* Header */}
       <LinearGradient
         colors={[Colors.primary, '#1E40AF']}
-        style={styles.header}
+        style={[styles.header, { paddingTop: insets.top + Spacing.md }]}
       >
         <Text style={styles.headerTitle}>My Orders</Text>
         <Text style={styles.headerSubtitle}>{orders.length} Total Orders</Text>
@@ -196,7 +198,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingTop: Spacing.xxl + Spacing.lg,
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
     borderBottomLeftRadius: BorderRadius.xl,
