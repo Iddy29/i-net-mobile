@@ -18,6 +18,7 @@ import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/
 import { services, Service } from '@/data/services';
 import ServiceCard from '@/components/ServiceCard';
 import ServiceDetailSheet from '@/components/ServiceDetailSheet';
+import { CategoryIcon } from '@/components/ServiceIcon';
 
 const { width } = Dimensions.get('window');
 
@@ -60,10 +61,10 @@ export default function HomeScreen() {
       >
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.greeting}>{greeting}, {userName}</Text>
+            <Text style={styles.greeting}>{greeting}, <Text style={styles.userName}>{userName}</Text></Text>
           </View>
           <TouchableOpacity style={styles.avatar}>
-            <Text style={styles.avatarText}>{userName[0]}</Text>
+            <Ionicons name="person" size={20} color={Colors.white} />
           </TouchableOpacity>
         </View>
 
@@ -104,14 +105,21 @@ export default function HomeScreen() {
                   }
                   style={styles.categoryChip}
                 >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      selectedCategory === category && styles.categoryTextActive,
-                    ]}
-                  >
-                    {category}
-                  </Text>
+                  <View style={styles.categoryChipContent}>
+                    <CategoryIcon
+                      category={category}
+                      size={16}
+                      color={selectedCategory === category ? Colors.white : Colors.dark}
+                    />
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        selectedCategory === category && styles.categoryTextActive,
+                      ]}
+                    >
+                      {category}
+                    </Text>
+                  </View>
                 </LinearGradient>
               </TouchableOpacity>
             </Animated.View>
@@ -170,6 +178,9 @@ const styles = StyleSheet.create({
     ...Typography.h2,
     color: Colors.white,
   },
+  userName: {
+    color: Colors.secondary,
+  },
   avatar: {
     width: 44,
     height: 44,
@@ -177,10 +188,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  avatarText: {
-    ...Typography.h3,
-    color: Colors.white,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -207,10 +214,15 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   categoryChip: {
-    paddingHorizontal: Spacing.md + 4,
+    paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 2,
     borderRadius: BorderRadius.full,
     ...Shadows.small,
+  },
+  categoryChipContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
   },
   categoryText: {
     ...Typography.small,

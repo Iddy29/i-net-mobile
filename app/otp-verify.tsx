@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 
 export default function OTPVerifyScreen() {
@@ -68,6 +69,10 @@ export default function OTPVerifyScreen() {
       <StatusBar barStyle="dark-content" />
       <View style={styles.content}>
         <Animated.View entering={FadeInDown.duration(600)} style={styles.header}>
+          {/* Icon */}
+          <View style={styles.iconContainer}>
+            <MaterialCommunityIcons name="shield-check-outline" size={40} color={Colors.secondary} />
+          </View>
           <Text style={styles.title}>Verify OTP</Text>
           <Text style={styles.subtitle}>
             Enter the 6-digit code sent to{'\n'}your phone number
@@ -91,11 +96,15 @@ export default function OTPVerifyScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.timerContainer}>
-          <Text style={styles.timerText}>
-            {timer > 0 ? `Resend code in ${timer}s` : 'Code expired'}
-          </Text>
+          <View style={styles.timerRow}>
+            <MaterialCommunityIcons name="timer-outline" size={18} color={Colors.gray} />
+            <Text style={styles.timerText}>
+              {timer > 0 ? `Resend code in ${timer}s` : 'Code expired'}
+            </Text>
+          </View>
           {timer === 0 && (
-            <TouchableOpacity onPress={handleResend}>
+            <TouchableOpacity onPress={handleResend} style={styles.resendButton}>
+              <Ionicons name="refresh-outline" size={16} color={Colors.secondary} />
               <Text style={styles.resendLink}>Resend Code</Text>
             </TouchableOpacity>
           )}
@@ -114,6 +123,7 @@ export default function OTPVerifyScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.button}
             >
+              <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} style={styles.buttonIcon} />
               <Text style={styles.buttonText}>Verify</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -135,6 +145,15 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: Spacing.xxl,
+  },
+  iconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.secondary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
   },
   title: {
     ...Typography.h1,
@@ -169,10 +188,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.xl,
   },
+  timerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
   timerText: {
     ...Typography.body,
     color: Colors.gray,
-    marginBottom: Spacing.xs,
+  },
+  resendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
   },
   resendLink: {
     ...Typography.body,
@@ -186,9 +215,14 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   button: {
+    flexDirection: 'row',
     paddingVertical: Spacing.md + 2,
     borderRadius: BorderRadius.full,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonIcon: {
+    marginRight: Spacing.xs,
   },
   buttonText: {
     ...Typography.h3,

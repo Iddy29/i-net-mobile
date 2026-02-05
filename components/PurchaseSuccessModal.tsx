@@ -9,9 +9,10 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
 import { Service } from '@/data/services';
+import { ServiceIcon } from './ServiceIcon';
 
 interface PurchaseSuccessModalProps {
   visible: boolean;
@@ -22,6 +23,7 @@ interface PurchaseSuccessModalProps {
 export default function PurchaseSuccessModal({ visible, service, onClose }: PurchaseSuccessModalProps) {
   const scaleAnim = useRef(new RNAnimated.Value(0)).current;
   const checkAnim = useRef(new RNAnimated.Value(0)).current;
+  const confettiAnim = useRef(new RNAnimated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
@@ -45,9 +47,21 @@ export default function PurchaseSuccessModal({ visible, service, onClose }: Purc
           useNativeDriver: true,
         }),
       ]).start();
+
+      // Animate confetti icons
+      RNAnimated.sequence([
+        RNAnimated.delay(300),
+        RNAnimated.spring(confettiAnim, {
+          toValue: 1,
+          tension: 60,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else {
       scaleAnim.setValue(0);
       checkAnim.setValue(0);
+      confettiAnim.setValue(0);
     }
   }, [visible]);
 
@@ -85,10 +99,28 @@ export default function PurchaseSuccessModal({ visible, service, onClose }: Purc
               </View>
             </RNAnimated.View>
 
-            {/* Confetti Emojis */}
+            {/* Celebration Icons */}
             <View style={styles.confetti}>
-              <Text style={styles.confettiEmoji}>🎉</Text>
-              <Text style={[styles.confettiEmoji, styles.confettiRight]}>🎊</Text>
+              <RNAnimated.View
+                style={{
+                  transform: [
+                    { scale: confettiAnim },
+                    { rotate: '-15deg' },
+                  ],
+                }}
+              >
+                <MaterialCommunityIcons name="party-popper" size={28} color={Colors.secondary} />
+              </RNAnimated.View>
+              <RNAnimated.View
+                style={{
+                  transform: [
+                    { scale: confettiAnim },
+                    { rotate: '15deg' },
+                  ],
+                }}
+              >
+                <MaterialCommunityIcons name="star-four-points" size={28} color={Colors.warning} />
+              </RNAnimated.View>
             </View>
 
             {/* Text */}
@@ -99,7 +131,9 @@ export default function PurchaseSuccessModal({ visible, service, onClose }: Purc
 
             {/* Service Info */}
             <View style={styles.serviceInfo}>
-              <Text style={styles.serviceIcon}>{service.icon}</Text>
+              <View style={styles.serviceIconWrapper}>
+                <ServiceIcon type={service.iconType} size={32} color={Colors.white} />
+              </View>
               <Text style={styles.serviceName}>{service.name}</Text>
               <Text style={styles.servicePrice}>${service.price.toFixed(2)}</Text>
             </View>
@@ -153,12 +187,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
   },
-  confettiEmoji: {
-    fontSize: 32,
-  },
-  confettiRight: {
-    transform: [{ rotate: '-20deg' }],
-  },
   title: {
     ...Typography.h2,
     color: Colors.white,
@@ -179,8 +207,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
     width: '100%',
   },
-  serviceIcon: {
-    fontSize: 32,
+  serviceIconWrapper: {
     marginBottom: Spacing.xs,
   },
   serviceName: {

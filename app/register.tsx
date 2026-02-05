@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 
 export default function RegisterScreen() {
@@ -56,8 +56,11 @@ export default function RegisterScreen() {
           <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.form}>
             {/* Full Name */}
             <View style={styles.inputContainer}>
+              <View style={styles.inputIconLeft}>
+                <Ionicons name="person-outline" size={20} color={Colors.gray} />
+              </View>
               <TextInput
-                style={styles.input}
+                style={[styles.input, styles.inputWithLeftIcon]}
                 placeholder="Full Name"
                 placeholderTextColor={Colors.gray}
                 value={fullName}
@@ -68,8 +71,11 @@ export default function RegisterScreen() {
 
             {/* Email */}
             <View style={styles.inputContainer}>
+              <View style={styles.inputIconLeft}>
+                <MaterialCommunityIcons name="email-outline" size={20} color={Colors.gray} />
+              </View>
               <TextInput
-                style={styles.input}
+                style={[styles.input, styles.inputWithLeftIcon]}
                 placeholder="Email Address"
                 placeholderTextColor={Colors.gray}
                 value={email}
@@ -81,8 +87,11 @@ export default function RegisterScreen() {
 
             {/* Phone */}
             <View style={styles.inputContainer}>
+              <View style={styles.inputIconLeft}>
+                <MaterialCommunityIcons name="phone-outline" size={20} color={Colors.gray} />
+              </View>
               <TextInput
-                style={styles.input}
+                style={[styles.input, styles.inputWithLeftIcon]}
                 placeholder="Phone Number"
                 placeholderTextColor={Colors.gray}
                 value={phone}
@@ -93,8 +102,11 @@ export default function RegisterScreen() {
 
             {/* Password */}
             <View style={styles.inputContainer}>
+              <View style={styles.inputIconLeft}>
+                <MaterialCommunityIcons name="lock-outline" size={20} color={Colors.gray} />
+              </View>
               <TextInput
-                style={[styles.input, styles.inputWithIcon]}
+                style={[styles.input, styles.inputWithLeftIcon, styles.inputWithRightIcon]}
                 placeholder="Password"
                 placeholderTextColor={Colors.gray}
                 value={password}
@@ -116,8 +128,11 @@ export default function RegisterScreen() {
 
             {/* Confirm Password */}
             <View style={styles.inputContainer}>
+              <View style={styles.inputIconLeft}>
+                <MaterialCommunityIcons name="lock-check-outline" size={20} color={Colors.gray} />
+              </View>
               <TextInput
-                style={[styles.input, styles.inputWithIcon]}
+                style={[styles.input, styles.inputWithLeftIcon, styles.inputWithRightIcon]}
                 placeholder="Confirm Password"
                 placeholderTextColor={Colors.gray}
                 value={confirmPassword}
@@ -197,8 +212,18 @@ const styles = StyleSheet.create({
     color: Colors.dark,
     ...Shadows.small,
   },
-  inputWithIcon: {
+  inputWithLeftIcon: {
+    paddingLeft: Spacing.xxl + Spacing.sm,
+  },
+  inputWithRightIcon: {
     paddingRight: Spacing.xxl + Spacing.md,
+  },
+  inputIconLeft: {
+    position: 'absolute',
+    left: Spacing.md + 4,
+    top: '50%',
+    transform: [{ translateY: -10 }],
+    zIndex: 1,
   },
   eyeIcon: {
     position: 'absolute',

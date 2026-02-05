@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/theme';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Colors, Shadows } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
@@ -14,15 +14,16 @@ export default function TabLayout() {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: Colors.white,
-          borderTopWidth: 1,
-          borderTopColor: Colors.lightGray,
+          borderTopWidth: 0,
           paddingBottom: insets.bottom,
-          height: 60 + insets.bottom,
+          height: 64 + insets.bottom,
           paddingTop: 8,
+          ...Shadows.medium,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
+          marginTop: 2,
         },
       }}
     >
@@ -30,8 +31,12 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'home' : 'home-outline'}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
@@ -39,8 +44,12 @@ export default function TabLayout() {
         name="orders"
         options={{
           title: 'My Orders',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="receipt" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'clipboard-list' : 'clipboard-list-outline'}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
@@ -48,8 +57,12 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: 'Chat',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubble" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialCommunityIcons
+              name={focused ? 'chat-processing' : 'chat-processing-outline'}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
@@ -57,8 +70,12 @@ export default function TabLayout() {
         name="menu"
         options={{
           title: 'Menu',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="menu" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'grid' : 'grid-outline'}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />

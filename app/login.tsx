@@ -13,7 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 
 export default function LoginScreen() {
@@ -49,8 +49,11 @@ export default function LoginScreen() {
           <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.form}>
             {/* Email */}
             <View style={styles.inputContainer}>
+              <View style={styles.inputIconLeft}>
+                <MaterialCommunityIcons name="email-outline" size={20} color={Colors.gray} />
+              </View>
               <TextInput
-                style={styles.input}
+                style={[styles.input, styles.inputWithLeftIcon]}
                 placeholder="Email Address"
                 placeholderTextColor={Colors.gray}
                 value={email}
@@ -62,8 +65,11 @@ export default function LoginScreen() {
 
             {/* Password */}
             <View style={styles.inputContainer}>
+              <View style={styles.inputIconLeft}>
+                <MaterialCommunityIcons name="lock-outline" size={20} color={Colors.gray} />
+              </View>
               <TextInput
-                style={[styles.input, styles.inputWithIcon]}
+                style={[styles.input, styles.inputWithLeftIcon, styles.inputWithRightIcon]}
                 placeholder="Password"
                 placeholderTextColor={Colors.gray}
                 value={password}
@@ -102,7 +108,7 @@ export default function LoginScreen() {
 
             {/* Register Link */}
             <View style={styles.registerContainer}>
-              <Text style={styles.registerText}>Don't have an account? </Text>
+              <Text style={styles.registerText}>Don&apos;t have an account? </Text>
               <TouchableOpacity onPress={handleRegister}>
                 <Text style={styles.registerLink}>Register</Text>
               </TouchableOpacity>
@@ -153,8 +159,18 @@ const styles = StyleSheet.create({
     color: Colors.dark,
     ...Shadows.small,
   },
-  inputWithIcon: {
+  inputWithLeftIcon: {
+    paddingLeft: Spacing.xxl + Spacing.sm,
+  },
+  inputWithRightIcon: {
     paddingRight: Spacing.xxl + Spacing.md,
+  },
+  inputIconLeft: {
+    position: 'absolute',
+    left: Spacing.md + 4,
+    top: '50%',
+    transform: [{ translateY: -10 }],
+    zIndex: 1,
   },
   eyeIcon: {
     position: 'absolute',

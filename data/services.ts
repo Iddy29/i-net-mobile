@@ -1,3 +1,5 @@
+import { ServiceIconType } from '@/components/ServiceIcon';
+
 export interface Service {
   id: string;
   name: string;
@@ -6,7 +8,7 @@ export interface Service {
   price: number;
   duration: string;
   features: string[];
-  icon: string; // emoji or icon name
+  iconType: ServiceIconType;
   color: string;
 }
 
@@ -19,7 +21,7 @@ export const services: Service[] = [
     price: 12.99,
     duration: '1-Month',
     features: ['4K Ultra HD', '4 Screens Simultaneously', 'Download Content', 'No Ads'],
-    icon: '🎬',
+    iconType: 'netflix',
     color: '#E50914',
   },
   {
@@ -30,7 +32,7 @@ export const services: Service[] = [
     price: 20.00,
     duration: '1-Month',
     features: ['GPT-4 Access', 'Priority Response', 'Faster Performance', 'Early Features'],
-    icon: '🤖',
+    iconType: 'chatgpt',
     color: '#10A37F',
   },
   {
@@ -41,7 +43,7 @@ export const services: Service[] = [
     price: 9.99,
     duration: '1-Month',
     features: ['Ad-Free Music', 'Offline Downloads', 'High Quality Audio', 'Unlimited Skips'],
-    icon: '🎵',
+    iconType: 'spotify',
     color: '#1DB954',
   },
   {
@@ -52,7 +54,7 @@ export const services: Service[] = [
     price: 14.95,
     duration: '1-Month',
     features: ['Multiple Charts', 'Advanced Alerts', 'Custom Indicators', 'Volume Profile'],
-    icon: '📈',
+    iconType: 'tradingview',
     color: '#2962FF',
   },
   {
@@ -63,7 +65,7 @@ export const services: Service[] = [
     price: 29.99,
     duration: '1-Month',
     features: ['50GB High-Speed', '5G Compatible', 'No Throttling', 'Rollover Data'],
-    icon: '📡',
+    iconType: 'data-bundle',
     color: '#8B5CF6',
   },
   {
@@ -74,7 +76,7 @@ export const services: Service[] = [
     price: 10.99,
     duration: '1-Month',
     features: ['4K Quality', 'Star Content', 'Download Content', '4 Devices'],
-    icon: '🏰',
+    iconType: 'disney',
     color: '#113CCF',
   },
   {
@@ -85,7 +87,7 @@ export const services: Service[] = [
     price: 30.00,
     duration: '1-Month',
     features: ['Unlimited Fast', 'Commercial Use', 'Stealth Mode', 'Priority Queue'],
-    icon: '🎨',
+    iconType: 'midjourney',
     color: '#FF6F61',
   },
   {
@@ -96,7 +98,7 @@ export const services: Service[] = [
     price: 49.99,
     duration: '1-Month',
     features: ['100GB High-Speed', '5G Priority', 'Unlimited 3G', 'Hotspot Support'],
-    icon: '🚀',
+    iconType: 'data-bundle-large',
     color: '#EC4899',
   },
 ];

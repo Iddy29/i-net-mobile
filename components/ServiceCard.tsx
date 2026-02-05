@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 import { Service } from '@/data/services';
+import { ServiceIcon } from './ServiceIcon';
 
 interface ServiceCardProps {
   service: Service;
@@ -15,7 +16,7 @@ export default function ServiceCard({ service, onPress }: ServiceCardProps) {
       <View style={styles.card}>
         {/* Icon */}
         <View style={[styles.iconContainer, { backgroundColor: service.color + '15' }]}>
-          <Text style={styles.icon}>{service.icon}</Text>
+          <ServiceIcon type={service.iconType} size={28} color={service.color} />
         </View>
 
         {/* Content */}
@@ -59,9 +60,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.sm,
-  },
-  icon: {
-    fontSize: 24,
   },
   name: {
     ...Typography.h3,

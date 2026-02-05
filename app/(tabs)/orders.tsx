@@ -13,6 +13,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 import { Order, OrderStatus, services } from '@/data/services';
+import { ServiceIcon } from '@/components/ServiceIcon';
 
 export default function OrdersScreen() {
   // Dummy orders data
@@ -110,8 +111,8 @@ export default function OrdersScreen() {
             >
               {/* Service Icon & Info */}
               <View style={styles.orderHeader}>
-                <View style={[styles.serviceIcon, { backgroundColor: order.service.color + '15' }]}>
-                  <Text style={styles.serviceEmoji}>{order.service.icon}</Text>
+                <View style={[styles.serviceIconContainer, { backgroundColor: order.service.color + '15' }]}>
+                  <ServiceIcon type={order.service.iconType} size={24} color={order.service.color} />
                 </View>
                 <View style={styles.orderInfo}>
                   <Text style={styles.serviceName}>{order.service.name}</Text>
@@ -177,7 +178,7 @@ export default function OrdersScreen() {
                 <View style={styles.deliveringMessage}>
                   <Ionicons name="information-circle" size={16} color={Colors.warning} />
                   <Text style={styles.deliveringText}>
-                    Your order is being processed. You'll receive access details within 24 hours.
+                    Your order is being processed. You&apos;ll receive access details within 24 hours.
                   </Text>
                 </View>
               )}
@@ -225,15 +226,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.md,
   },
-  serviceIcon: {
+  serviceIconContainer: {
     width: 48,
     height: 48,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  serviceEmoji: {
-    fontSize: 24,
   },
   orderInfo: {
     flex: 1,

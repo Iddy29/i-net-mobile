@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 import { Service } from '@/data/services';
+import { ServiceIcon } from './ServiceIcon';
 import PurchaseSuccessModal from './PurchaseSuccessModal';
 
 const { height, width } = Dimensions.get('window');
@@ -88,7 +89,7 @@ export default function ServiceDetailSheet({ service, visible, onClose }: Servic
             {/* Header */}
             <View style={styles.header}>
               <View style={[styles.iconContainer, { backgroundColor: service.color + '15' }]}>
-                <Text style={styles.icon}>{service.icon}</Text>
+                <ServiceIcon type={service.iconType} size={36} color={service.color} />
               </View>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                 <Ionicons name="close" size={24} color={Colors.dark} />
@@ -108,7 +109,7 @@ export default function ServiceDetailSheet({ service, visible, onClose }: Servic
               </View>
 
               {/* Features */}
-              <Text style={styles.featuresTitle}>What's Included:</Text>
+              <Text style={styles.featuresTitle}>What&apos;s Included:</Text>
               {service.features.map((feature, index) => (
                 <View key={index} style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
@@ -190,9 +191,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  icon: {
-    fontSize: 32,
   },
   closeButton: {
     padding: Spacing.xs,

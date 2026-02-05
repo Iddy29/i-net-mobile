@@ -13,8 +13,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTextGeneration } from '@fastshot/ai';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
 
@@ -98,7 +98,7 @@ export default function ChatScreen() {
       >
         {!isUser && (
           <View style={styles.aiAvatar}>
-            <Text style={styles.aiAvatarText}>🤖</Text>
+            <MaterialCommunityIcons name="robot-happy-outline" size={20} color={Colors.secondary} />
           </View>
         )}
         <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.aiBubble]}>
@@ -132,11 +132,13 @@ export default function ChatScreen() {
           <TouchableOpacity style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color={Colors.white} />
           </TouchableOpacity>
+          <View style={styles.headerIconContainer}>
+            <MaterialCommunityIcons name="robot-happy-outline" size={24} color={Colors.secondary} />
+          </View>
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>Support Chat</Text>
             <Text style={styles.headerSubtitle}>
-              i-net AI Assistant (Powered by{' '}
-              <Text style={styles.newellBrand}>Newell AI</Text>)
+              Powered by <Text style={styles.newellBrand}>Newell AI</Text>
             </Text>
           </View>
         </View>
@@ -221,7 +223,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButton: {
-    marginRight: Spacing.md,
+    marginRight: Spacing.sm,
+  },
+  headerIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.sm,
   },
   headerTextContainer: {
     flex: 1,
@@ -262,9 +273,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.sm,
-  },
-  aiAvatarText: {
-    fontSize: 20,
   },
   userAvatar: {
     width: 36,
