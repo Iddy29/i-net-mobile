@@ -64,9 +64,9 @@ export default function ChatScreen() {
 
     try {
       // Generate AI response using Newell AI
-      const response = await generateText({
-        prompt: `You are a helpful customer support assistant for i-net, a premium digital service marketplace. The user says: "${userInput}". Provide a helpful, concise, and friendly response about digital services, accounts, subscriptions, or general support. Keep responses under 150 words.`,
-      });
+      const response = await generateText(
+        `You are a helpful customer support assistant for i-net, a premium digital service marketplace. The user says: "${userInput}". Provide a helpful, concise, and friendly response about digital services, accounts, subscriptions, or general support. Keep responses under 150 words.`
+      );
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),

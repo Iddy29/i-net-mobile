@@ -78,7 +78,7 @@ export default function OTPVerifyScreen() {
           {otp.map((digit, index) => (
             <TextInput
               key={index}
-              ref={(ref) => (inputs.current[index] = ref)}
+              ref={(ref) => { inputs.current[index] = ref; }}
               style={[styles.otpInput, digit && styles.otpInputFilled]}
               value={digit}
               onChangeText={(text) => handleOtpChange(text, index)}
