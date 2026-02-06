@@ -2,12 +2,18 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
-import { Service } from '@/data/services';
 import { ServiceIcon } from './ServiceIcon';
 
 interface ServiceCardProps {
-  service: Service;
+  service: any;
   onPress: () => void;
+}
+
+function formatPrice(price: number, currency: string = 'TZS') {
+  if (currency === 'TZS') {
+    return `TZS ${Number(price).toLocaleString()}`;
+  }
+  return `$${Number(price).toFixed(2)}`;
 }
 
 export default function ServiceCard({ service, onPress }: ServiceCardProps) {
@@ -16,7 +22,7 @@ export default function ServiceCard({ service, onPress }: ServiceCardProps) {
       <View style={styles.card}>
         {/* Icon */}
         <View style={[styles.iconContainer, { backgroundColor: service.color + '15' }]}>
-          <ServiceIcon type={service.iconType} size={28} color={service.color} />
+          <ServiceIcon type={service.iconType} size={28} color={service.color} iconImage={service.iconImage} />
         </View>
 
         {/* Content */}
@@ -26,7 +32,7 @@ export default function ServiceCard({ service, onPress }: ServiceCardProps) {
 
         {/* Price & Button */}
         <View style={styles.footer}>
-          <Text style={styles.price}>${service.price.toFixed(2)}</Text>
+          <Text style={styles.price} numberOfLines={1}>{formatPrice(service.price, service.currency)}</Text>
           <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
             <LinearGradient
               colors={[Colors.secondary, '#0891B2']}
@@ -85,8 +91,10 @@ const styles = StyleSheet.create({
   },
   price: {
     ...Typography.h3,
-    fontSize: 18,
+    fontSize: 14,
     color: Colors.primary,
+    flex: 1,
+    marginRight: Spacing.xs,
   },
   buyButton: {
     paddingHorizontal: Spacing.md,

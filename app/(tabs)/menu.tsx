@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,19 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar,
+  Alert,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { notificationsAPI } from '@/services/api';
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -22,9 +27,10 @@ interface MenuItemProps {
   onPress: () => void;
   showArrow?: boolean;
   danger?: boolean;
+  badge?: number;
 }
 
-function MenuItem({ icon, title, subtitle, onPress, showArrow = true, danger = false }: MenuItemProps) {
+function MenuItem({ icon, title, subtitle, onPress, showArrow = true, danger = false, badge }: MenuItemProps) {
   return (
     <TouchableOpacity
       style={styles.menuItem}
@@ -38,6 +44,11 @@ function MenuItem({ icon, title, subtitle, onPress, showArrow = true, danger = f
         <Text style={[styles.menuTitle, danger && styles.menuTitleDanger]}>{title}</Text>
         {subtitle && <Text style={styles.menuSubtitle}>{subtitle}</Text>}
       </View>
+      {badge !== undefined && badge > 0 && (
+        <View style={styles.menuBadge}>
+          <Text style={styles.menuBadgeText}>{badge > 99 ? '99+' : badge}</Text>
+        </View>
+      )}
       {showArrow && (
         <Ionicons name="chevron-forward" size={20} color={Colors.gray} />
       )}
@@ -48,6 +59,23 @@ function MenuItem({ icon, title, subtitle, onPress, showArrow = true, danger = f
 export default function MenuScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { user, logout } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread count every time the screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUnread = async () => {
+        try {
+          const res = await notificationsAPI.getUnreadCount();
+          if (res.success && res.data) {
+            setUnreadCount(res.data.count);
+          }
+        } catch (e) { /* ignore */ }
+      };
+      fetchUnread();
+    }, [])
+  );
 
   const handlePress = (action: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -57,7 +85,21 @@ export default function MenuScreen() {
 
   const handleLogout = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    router.replace('/');
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/');
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -70,16 +112,23 @@ export default function MenuScreen() {
         style={[styles.header, { paddingTop: insets.top + Spacing.md }]}
       >
         <View style={styles.profileSection}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={32} color={Colors.white} />
-          </View>
+          {user?.profilePicture ? (
+            <Image source={{ uri: user.profilePicture }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatar}>
+              <Ionicons name="person" size={32} color={Colors.white} />
+            </View>
+          )}
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Alex Johnson</Text>
-            <Text style={styles.profileEmail}>alex@example.com</Text>
+            <Text style={styles.profileName}>{user?.fullName || 'User'}</Text>
+            <Text style={styles.profileEmail}>{user?.email || ''}</Text>
           </View>
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => handlePress('edit-profile')}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/profile-edit');
+            }}
           >
             <MaterialCommunityIcons name="pencil-outline" size={20} color={Colors.white} />
           </TouchableOpacity>
@@ -99,13 +148,20 @@ export default function MenuScreen() {
               icon={<Ionicons name="person-outline" size={22} color={Colors.primary} />}
               title="Profile Settings"
               subtitle="Update your personal information"
-              onPress={() => handlePress('profile')}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/profile-edit');
+              }}
             />
             <MenuItem
               icon={<MaterialCommunityIcons name="bell-outline" size={22} color={Colors.primary} />}
               title="Notifications"
-              subtitle="Manage notification preferences"
-              onPress={() => handlePress('notifications')}
+              subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'View your notifications'}
+              badge={unreadCount}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/notifications');
+              }}
             />
             <MenuItem
               icon={<MaterialCommunityIcons name="shield-check-outline" size={22} color={Colors.primary} />}
@@ -130,7 +186,10 @@ export default function MenuScreen() {
               icon={<MaterialCommunityIcons name="history" size={22} color={Colors.primary} />}
               title="Transaction History"
               subtitle="View past transactions"
-              onPress={() => handlePress('history')}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/transactions');
+              }}
             />
             <MenuItem
               icon={<MaterialCommunityIcons name="gift-outline" size={22} color={Colors.primary} />}
@@ -219,6 +278,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
   profileInfo: {
     flex: 1,
     marginLeft: Spacing.md,
@@ -304,5 +370,20 @@ const styles = StyleSheet.create({
   footerText: {
     ...Typography.caption,
     color: Colors.gray,
+  },
+  menuBadge: {
+    backgroundColor: Colors.error,
+    borderRadius: 12,
+    minWidth: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    marginRight: Spacing.xs,
+  },
+  menuBadgeText: {
+    color: Colors.white,
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

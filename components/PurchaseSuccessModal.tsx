@@ -11,12 +11,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
-import { Service } from '@/data/services';
 import { ServiceIcon } from './ServiceIcon';
+
+function formatPrice(price: number, currency: string = 'TZS') {
+  if (currency === 'TZS') return `TZS ${Number(price).toLocaleString()}`;
+  return `$${Number(price).toFixed(2)}`;
+}
 
 interface PurchaseSuccessModalProps {
   visible: boolean;
-  service: Service;
+  service: any;
   onClose: () => void;
 }
 
@@ -132,10 +136,10 @@ export default function PurchaseSuccessModal({ visible, service, onClose }: Purc
             {/* Service Info */}
             <View style={styles.serviceInfo}>
               <View style={styles.serviceIconWrapper}>
-                <ServiceIcon type={service.iconType} size={32} color={Colors.white} />
+                <ServiceIcon type={service.iconType} size={32} color={Colors.white} iconImage={service.iconImage} />
               </View>
               <Text style={styles.serviceName}>{service.name}</Text>
-              <Text style={styles.servicePrice}>${service.price.toFixed(2)}</Text>
+              <Text style={styles.servicePrice}>{formatPrice(service.price, service.currency)}</Text>
             </View>
 
             {/* Close Button */}

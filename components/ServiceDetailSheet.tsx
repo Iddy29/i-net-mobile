@@ -9,27 +9,38 @@ import {
   ScrollView,
   Animated as RNAnimated,
   PanResponder,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
-import { Service } from '@/data/services';
 import { ServiceIcon } from './ServiceIcon';
+import PaymentModal from './PaymentModal';
 import PurchaseSuccessModal from './PurchaseSuccessModal';
 
 const { height, width } = Dimensions.get('window');
 
+function formatPrice(price: number, currency: string = 'TZS') {
+  if (currency === 'TZS') {
+    return `TZS ${Number(price).toLocaleString()}`;
+  }
+  return `$${Number(price).toFixed(2)}`;
+}
+
 interface ServiceDetailSheetProps {
-  service: Service;
+  service: any;
   visible: boolean;
   onClose: () => void;
 }
 
 export default function ServiceDetailSheet({ service, visible, onClose }: ServiceDetailSheetProps) {
+  const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [slideValue] = useState(new RNAnimated.Value(0));
   const slideAnim = useRef(slideValue).current;
+
+  const categoryName = typeof service.category === 'object' ? service.category?.name : service.category;
 
   const panResponder = useRef(
     PanResponder.create({
@@ -42,16 +53,14 @@ export default function ServiceDetailSheet({ service, visible, onClose }: Servic
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dx > width * 0.7) {
-          // Slide completed
           RNAnimated.timing(slideAnim, {
             toValue: width - 100,
             duration: 200,
             useNativeDriver: false,
           }).start(() => {
-            handlePurchase();
+            handleSlideComplete();
           });
         } else {
-          // Slide back
           RNAnimated.spring(slideAnim, {
             toValue: 0,
             useNativeDriver: false,
@@ -61,10 +70,21 @@ export default function ServiceDetailSheet({ service, visible, onClose }: Servic
     })
   ).current;
 
-  const handlePurchase = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  const handleSlideComplete = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     slideAnim.setValue(0);
+    // Open payment modal
+    setShowPayment(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    // Payment confirmed via FastLipa - show success
+    setShowPayment(false);
     setShowSuccess(true);
+  };
+
+  const handlePaymentClose = () => {
+    setShowPayment(false);
   };
 
   const handleSuccessClose = () => {
@@ -75,7 +95,7 @@ export default function ServiceDetailSheet({ service, visible, onClose }: Servic
   return (
     <>
       <Modal
-        visible={visible}
+        visible={visible && !showPayment && !showSuccess}
         transparent
         animationType="slide"
         onRequestClose={onClose}
@@ -89,7 +109,7 @@ export default function ServiceDetailSheet({ service, visible, onClose }: Servic
             {/* Header */}
             <View style={styles.header}>
               <View style={[styles.iconContainer, { backgroundColor: service.color + '15' }]}>
-                <ServiceIcon type={service.iconType} size={36} color={service.color} />
+                <ServiceIcon type={service.iconType} size={36} color={service.color} iconImage={service.iconImage} />
               </View>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                 <Ionicons name="close" size={24} color={Colors.dark} />
@@ -99,29 +119,33 @@ export default function ServiceDetailSheet({ service, visible, onClose }: Servic
             {/* Content */}
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
               <Text style={styles.name}>{service.name}</Text>
-              <Text style={styles.category}>{service.category}</Text>
+              <Text style={styles.category}>{categoryName || ''}</Text>
               <Text style={styles.description}>{service.description}</Text>
 
               {/* Price */}
               <View style={styles.priceContainer}>
                 <Text style={styles.priceLabel}>Price</Text>
-                <Text style={styles.price}>${service.price.toFixed(2)}</Text>
+                <Text style={styles.price}>{formatPrice(service.price, service.currency)}</Text>
               </View>
 
               {/* Features */}
-              <Text style={styles.featuresTitle}>What&apos;s Included:</Text>
-              {service.features.map((feature, index) => (
-                <View key={index} style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
-                  <Text style={styles.featureText}>{feature}</Text>
-                </View>
-              ))}
+              {service.features && service.features.length > 0 && (
+                <>
+                  <Text style={styles.featuresTitle}>What&apos;s Included:</Text>
+                  {service.features.map((feature: string, index: number) => (
+                    <View key={index} style={styles.featureItem}>
+                      <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+                      <Text style={styles.featureText}>{feature}</Text>
+                    </View>
+                  ))}
+                </>
+              )}
             </ScrollView>
 
             {/* Slide to Confirm */}
             <View style={styles.slideContainer}>
               <View style={styles.slideTrack}>
-                <Text style={styles.slideText}>Slide to Confirm Purchase</Text>
+                <Text style={styles.slideText}>Slide to Order</Text>
                 <RNAnimated.View
                   style={[
                     styles.slideThumb,
@@ -144,6 +168,15 @@ export default function ServiceDetailSheet({ service, visible, onClose }: Servic
         </View>
       </Modal>
 
+      {/* Payment Modal */}
+      <PaymentModal
+        visible={showPayment}
+        service={service}
+        onSuccess={handlePaymentSuccess}
+        onClose={handlePaymentClose}
+      />
+
+      {/* Success Modal */}
       <PurchaseSuccessModal
         visible={showSuccess}
         service={service}

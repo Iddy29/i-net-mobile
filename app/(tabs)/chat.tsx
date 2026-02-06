@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,11 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  KeyboardAvoidingView,
   Platform,
   StatusBar,
   ActivityIndicator,
+  Keyboard,
+  Animated as RNAnimated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -26,6 +27,9 @@ interface Message {
   timestamp: Date;
 }
 
+// Tab bar height constant (matches _layout.tsx: 64 + insets.bottom)
+const TAB_BAR_BASE = 64;
+
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Message[]>([
@@ -40,8 +44,53 @@ export default function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
   const { generateText, isLoading } = useTextGeneration();
 
+  // Keyboard height tracking
+  const keyboardPadding = useRef(new RNAnimated.Value(0)).current;
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
   useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive
+    const tabBarHeight = TAB_BAR_BASE + insets.bottom;
+
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = (e: any) => {
+      setKeyboardVisible(true);
+      // Keyboard height minus the tab bar that gets hidden/overlapped
+      const kbHeight = e.endCoordinates.height - tabBarHeight;
+      const finalPadding = Math.max(kbHeight, 0);
+
+      RNAnimated.timing(keyboardPadding, {
+        toValue: finalPadding,
+        duration: Platform.OS === 'ios' ? e.duration || 250 : 200,
+        useNativeDriver: false,
+      }).start();
+
+      // Scroll to bottom after keyboard opens
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    };
+
+    const onHide = (e: any) => {
+      setKeyboardVisible(false);
+      RNAnimated.timing(keyboardPadding, {
+        toValue: 0,
+        duration: Platform.OS === 'ios' ? (e?.duration || 250) : 200,
+        useNativeDriver: false,
+      }).start();
+    };
+
+    const sub1 = Keyboard.addListener(showEvent, onShow);
+    const sub2 = Keyboard.addListener(hideEvent, onHide);
+
+    return () => {
+      sub1.remove();
+      sub2.remove();
+    };
+  }, [insets.bottom, keyboardPadding]);
+
+  useEffect(() => {
     if (messages.length > 0) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
@@ -65,7 +114,6 @@ export default function ChatScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     try {
-      // Generate AI response using Newell AI
       const response = await generateText(
         `You are a helpful customer support assistant for i-net, a premium digital service marketplace. The user says: "${userInput}". Provide a helpful, concise, and friendly response about digital services, accounts, subscriptions, or general support. Keep responses under 150 words.`
       );
@@ -90,7 +138,7 @@ export default function ChatScreen() {
     }
   };
 
-  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
+  const renderMessage = useCallback(({ item, index }: { item: Message; index: number }) => {
     const isUser = item.sender === 'user';
 
     return (
@@ -122,7 +170,7 @@ export default function ChatScreen() {
         )}
       </Animated.View>
     );
-  };
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -155,6 +203,9 @@ export default function ChatScreen() {
         contentContainerStyle={styles.messagesList}
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        style={styles.messagesFlatList}
       />
 
       {/* Loading Indicator */}
@@ -167,43 +218,38 @@ export default function ChatScreen() {
         </View>
       )}
 
-      {/* Input Area */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-        <View style={styles.inputContainer}>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              placeholder="Type a message..."
-              placeholderTextColor={Colors.gray}
-              value={inputText}
-              onChangeText={setInputText}
-              multiline
-              maxLength={500}
-              editable={!isLoading}
-            />
-            <TouchableOpacity
-              onPress={handleSend}
-              disabled={!inputText.trim() || isLoading}
-              activeOpacity={0.7}
-              style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
+      {/* Input Area — animated with keyboard */}
+      <RNAnimated.View style={[styles.inputContainer, { paddingBottom: keyboardVisible ? Spacing.sm : Math.max(insets.bottom, Spacing.sm), marginBottom: keyboardPadding }]}>
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type a message..."
+            placeholderTextColor={Colors.gray}
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={500}
+            editable={!isLoading}
+          />
+          <TouchableOpacity
+            onPress={handleSend}
+            disabled={!inputText.trim() || isLoading}
+            activeOpacity={0.7}
+            style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
+          >
+            <LinearGradient
+              colors={
+                inputText.trim() && !isLoading
+                  ? [Colors.secondary, '#0891B2']
+                  : [Colors.lightGray, Colors.gray]
+              }
+              style={styles.sendButtonGradient}
             >
-              <LinearGradient
-                colors={
-                  inputText.trim() && !isLoading
-                    ? [Colors.secondary, '#0891B2']
-                    : [Colors.lightGray, Colors.gray]
-                }
-                style={styles.sendButtonGradient}
-              >
-                <Ionicons name="send" size={20} color={Colors.white} />
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+              <Ionicons name="send" size={20} color={Colors.white} />
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </RNAnimated.View>
     </View>
   );
 }
@@ -252,8 +298,12 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     fontWeight: '600',
   },
+  messagesFlatList: {
+    flex: 1,
+  },
   messagesList: {
     padding: Spacing.lg,
+    paddingBottom: Spacing.sm,
   },
   messageContainer: {
     flexDirection: 'row',
@@ -349,7 +399,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingTop: Spacing.sm,
     backgroundColor: Colors.white,
     borderTopWidth: 1,
     borderTopColor: Colors.lightGray,

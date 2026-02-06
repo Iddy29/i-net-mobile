@@ -9,6 +9,8 @@ import {
   Platform,
   StatusBar,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -17,23 +19,72 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
+import { authAPI } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleBack = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.back();
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Navigate to main app
-    router.replace('/(tabs)');
+
+    if (!email.trim() || !password) {
+      Alert.alert('Missing Fields', 'Please enter your email and password.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await authAPI.login({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      if (response.success && response.data) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // Save auth data and navigate to main app
+        await login(response.data.token, response.data.user);
+        router.replace('/(tabs)');
+      } else if (response.requiresVerification) {
+        // Account not verified - redirect to OTP screen
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        Alert.alert(
+          'Verification Required',
+          response.message,
+          [
+            {
+              text: 'Verify Now',
+              onPress: () => {
+                router.push({
+                  pathname: '/otp-verify',
+                  params: { email: email.trim().toLowerCase() },
+                });
+              },
+            },
+          ]
+        );
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('Login Failed', response.message);
+      }
+    } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRegister = () => {
@@ -83,6 +134,7 @@ export default function LoginScreen() {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                editable={!isLoading}
               />
             </View>
 
@@ -99,6 +151,7 @@ export default function LoginScreen() {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                editable={!isLoading}
               />
               <TouchableOpacity
                 style={styles.eyeIcon}
@@ -118,14 +171,23 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {/* Login Button */}
-            <TouchableOpacity onPress={handleLogin} activeOpacity={0.9} style={styles.buttonWrapper}>
+            <TouchableOpacity
+              onPress={handleLogin}
+              activeOpacity={0.9}
+              style={[styles.buttonWrapper, isLoading && styles.buttonDisabled]}
+              disabled={isLoading}
+            >
               <LinearGradient
                 colors={[Colors.secondary, '#0891B2']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.button}
               >
-                <Text style={styles.buttonText}>Log In</Text>
+                {isLoading ? (
+                  <ActivityIndicator color={Colors.white} size="small" />
+                ) : (
+                  <Text style={styles.buttonText}>Log In</Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
 
@@ -227,6 +289,9 @@ const styles = StyleSheet.create({
   },
   buttonWrapper: {
     marginTop: Spacing.md,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   button: {
     paddingVertical: Spacing.md + 2,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,9 @@ import {
   FlatList,
   StatusBar,
   Dimensions,
+  ActivityIndicator,
+  RefreshControl,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -16,41 +19,111 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
-import { services, Service } from '@/data/services';
 import ServiceCard from '@/components/ServiceCard';
 import ServiceDetailSheet from '@/components/ServiceDetailSheet';
 import { CategoryIcon } from '@/components/ServiceIcon';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import { categoriesAPI, servicesAPI, notificationsAPI } from '@/services/api';
 
 const { width } = Dimensions.get('window');
 
-type Category = 'All' | 'Streaming' | 'AI' | 'Trading' | 'Internet';
+interface CategoryItem {
+  _id: string;
+  name: string;
+  icon: string;
+  color: string;
+}
+
+interface ServiceItem {
+  _id: string;
+  name: string;
+  category: { _id: string; name: string; icon: string; color: string } | string;
+  description: string;
+  price: number;
+  currency: string;
+  duration: string;
+  features: string[];
+  iconType: string;
+  color: string;
+}
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const [selectedCategory, setSelectedCategory] = useState<Category>('All');
+  const router = useRouter();
+  const { user } = useAuth();
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const categories: Category[] = ['All', 'Streaming', 'AI', 'Trading', 'Internet'];
+  // Fetch unread notification count when focused
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUnread = async () => {
+        try {
+          const res = await notificationsAPI.getUnreadCount();
+          if (res.success && res.data) {
+            setUnreadCount(res.data.count);
+          }
+        } catch (e) { /* ignore */ }
+      };
+      fetchUnread();
+    }, [])
+  );
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [catRes, svcRes] = await Promise.all([
+        categoriesAPI.getAll(),
+        servicesAPI.getAll(),
+      ]);
+      if (catRes.success && catRes.data) setCategories(catRes.data);
+      if (svcRes.success && svcRes.data) setServices(svcRes.data);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData();
+  }, [fetchData]);
 
   const filteredServices = services.filter((service) => {
-    const matchesCategory = selectedCategory === 'All' || service.category === selectedCategory;
+    const categoryName = typeof service.category === 'object' ? service.category?.name : '';
+    const matchesCategory = selectedCategory === 'All' || categoryName === selectedCategory;
     const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  const handleCategorySelect = (category: Category) => {
+  const handleCategorySelect = (category: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedCategory(category);
   };
 
-  const handleServicePress = (service: Service) => {
+  const handleServicePress = (service: ServiceItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedService(service);
   };
 
-  const userName = 'Alex';
-  const greeting = 'Good Morning';
+  const firstName = user?.fullName?.split(' ')[0] || 'User';
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+
+  const allCategories = ['All', ...categories.map((c) => c.name)];
 
   return (
     <View style={styles.container}>
@@ -62,11 +135,29 @@ export default function HomeScreen() {
         style={[styles.header, { paddingTop: insets.top + Spacing.md }]}
       >
         <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.greeting}>{greeting}, <Text style={styles.userName}>{userName}</Text></Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.greeting}>{greeting}, <Text style={styles.userName}>{firstName}</Text></Text>
           </View>
+          <TouchableOpacity
+            style={styles.bellButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/notifications');
+            }}
+          >
+            <Ionicons name="notifications-outline" size={22} color={Colors.white} />
+            {unreadCount > 0 && (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
           <TouchableOpacity style={styles.avatar}>
-            <Ionicons name="person" size={20} color={Colors.white} />
+            {user?.profilePicture ? (
+              <Image source={{ uri: user.profilePicture }} style={styles.avatarImage} />
+            ) : (
+              <Ionicons name="person" size={20} color={Colors.white} />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -90,7 +181,7 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesContent}
         >
-          {categories.map((category, index) => (
+          {allCategories.map((category, index) => (
             <Animated.View
               key={category}
               entering={FadeInDown.delay(index * 50).duration(400)}
@@ -130,21 +221,36 @@ export default function HomeScreen() {
       </View>
 
       {/* Services Grid */}
-      <FlatList
-        data={filteredServices}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        contentContainerStyle={styles.servicesGrid}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index }) => (
-          <Animated.View
-            entering={FadeInDown.delay(index * 50).duration(400)}
-            style={styles.serviceCardWrapper}
-          >
-            <ServiceCard service={item} onPress={() => handleServicePress(item)} />
-          </Animated.View>
-        )}
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.secondary} />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredServices}
+          keyExtractor={(item) => item._id}
+          numColumns={2}
+          contentContainerStyle={styles.servicesGrid}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.secondary} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="cube-outline" size={48} color={Colors.gray} />
+              <Text style={styles.emptyText}>No services available</Text>
+            </View>
+          }
+          renderItem={({ item, index }) => (
+            <Animated.View
+              entering={FadeInDown.delay(index * 50).duration(400)}
+              style={styles.serviceCardWrapper}
+            >
+              <ServiceCard service={item} onPress={() => handleServicePress(item)} />
+            </Animated.View>
+          )}
+        />
+      )}
 
       {/* Service Detail Sheet */}
       {selectedService && (
@@ -182,6 +288,35 @@ const styles = StyleSheet.create({
   userName: {
     color: Colors.secondary,
   },
+  bellButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.sm,
+    position: 'relative',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: Colors.error,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+  },
+  bellBadgeText: {
+    color: Colors.white,
+    fontSize: 9,
+    fontWeight: '700',
+  },
   avatar: {
     width: 44,
     height: 44,
@@ -189,6 +324,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -242,5 +383,21 @@ const styles = StyleSheet.create({
     width: (width - Spacing.lg * 2 - Spacing.md) / 2,
     marginHorizontal: Spacing.xs,
     marginBottom: Spacing.md,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: Spacing.xxl * 2,
+  },
+  emptyText: {
+    ...Typography.body,
+    color: Colors.gray,
+    marginTop: Spacing.md,
   },
 });

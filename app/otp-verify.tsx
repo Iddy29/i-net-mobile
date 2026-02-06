@@ -7,20 +7,29 @@ import {
   TextInput,
   StatusBar,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
+import { authAPI } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 
 export default function OTPVerifyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { login } = useAuth();
+  const { email } = useLocalSearchParams<{ email: string }>();
+
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(60);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const inputs = useRef<Array<TextInput | null>>([]);
 
   const handleBack = () => {
@@ -46,9 +55,9 @@ export default function OTPVerifyScreen() {
       inputs.current[index + 1]?.focus();
     }
 
-    // Verify when all filled
+    // Auto-verify when all digits are filled
     if (newOtp.every((digit) => digit !== '') && index === 5) {
-      handleVerify();
+      handleVerify(newOtp.join(''));
     }
   };
 
@@ -58,19 +67,84 @@ export default function OTPVerifyScreen() {
     }
   };
 
-  const handleVerify = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.replace('/(tabs)');
-  };
+  const handleVerify = async (otpCode?: string) => {
+    const code = otpCode || otp.join('');
 
-  const handleResend = () => {
-    if (timer === 0) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setTimer(60);
-      setOtp(['', '', '', '', '', '']);
-      inputs.current[0]?.focus();
+    if (code.length !== 6) {
+      Alert.alert('Invalid Code', 'Please enter the complete 6-digit code.');
+      return;
+    }
+
+    if (!email) {
+      Alert.alert('Error', 'Email not found. Please go back and try again.');
+      return;
+    }
+
+    setIsVerifying(true);
+
+    try {
+      const response = await authAPI.verifyOtp({
+        email,
+        otp: code,
+      });
+
+      if (response.success && response.data) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // Save auth data and navigate to main app
+        await login(response.data.token, response.data.user);
+        router.replace('/(tabs)');
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert(
+          'Verification Failed',
+          response.message +
+            (response.attemptsRemaining !== undefined
+              ? `\n${response.attemptsRemaining} attempts remaining.`
+              : '')
+        );
+        // Clear the OTP inputs on failure
+        setOtp(['', '', '', '', '', '']);
+        inputs.current[0]?.focus();
+      }
+    } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setIsVerifying(false);
     }
   };
+
+  const handleResend = async () => {
+    if (timer > 0 || !email) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsResending(true);
+
+    try {
+      const response = await authAPI.resendOtp({ email });
+
+      if (response.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setTimer(60);
+        setOtp(['', '', '', '', '', '']);
+        inputs.current[0]?.focus();
+        Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        // If there's a retry timer from the server, use it
+        if (response.retryAfter) {
+          setTimer(response.retryAfter);
+        }
+        Alert.alert('Resend Failed', response.message);
+      }
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to resend code. Please try again.');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const isOtpComplete = otp.every((digit) => digit !== '');
 
   return (
     <View style={styles.container}>
@@ -98,7 +172,8 @@ export default function OTPVerifyScreen() {
           </View>
           <Text style={styles.title}>Verify OTP</Text>
           <Text style={styles.subtitle}>
-            Enter the 6-digit code sent to{'\n'}your phone number
+            Enter the 6-digit code sent to{'\n'}
+            <Text style={styles.emailText}>{email || 'your email'}</Text>
           </Text>
         </Animated.View>
 
@@ -114,6 +189,7 @@ export default function OTPVerifyScreen() {
               keyboardType="number-pad"
               maxLength={1}
               selectTextOnFocus
+              editable={!isVerifying}
             />
           ))}
         </Animated.View>
@@ -126,28 +202,44 @@ export default function OTPVerifyScreen() {
             </Text>
           </View>
           {timer === 0 && (
-            <TouchableOpacity onPress={handleResend} style={styles.resendButton}>
-              <Ionicons name="refresh-outline" size={16} color={Colors.secondary} />
-              <Text style={styles.resendLink}>Resend Code</Text>
+            <TouchableOpacity
+              onPress={handleResend}
+              style={styles.resendButton}
+              disabled={isResending}
+            >
+              {isResending ? (
+                <ActivityIndicator size="small" color={Colors.secondary} />
+              ) : (
+                <>
+                  <Ionicons name="refresh-outline" size={16} color={Colors.secondary} />
+                  <Text style={styles.resendLink}>Resend Code</Text>
+                </>
+              )}
             </TouchableOpacity>
           )}
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(300).duration(600)}>
           <TouchableOpacity
-            onPress={handleVerify}
+            onPress={() => handleVerify()}
             activeOpacity={0.9}
-            disabled={!otp.every((digit) => digit !== '')}
-            style={[styles.buttonWrapper, !otp.every((digit) => digit !== '') && styles.buttonDisabled]}
+            disabled={!isOtpComplete || isVerifying}
+            style={[styles.buttonWrapper, (!isOtpComplete || isVerifying) && styles.buttonDisabled]}
           >
             <LinearGradient
-              colors={otp.every((digit) => digit !== '') ? [Colors.secondary, '#0891B2'] : [Colors.lightGray, Colors.gray]}
+              colors={isOtpComplete ? [Colors.secondary, '#0891B2'] : [Colors.lightGray, Colors.gray]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.button}
             >
-              <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} style={styles.buttonIcon} />
-              <Text style={styles.buttonText}>Verify</Text>
+              {isVerifying ? (
+                <ActivityIndicator color={Colors.white} size="small" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} style={styles.buttonIcon} />
+                  <Text style={styles.buttonText}>Verify</Text>
+                </>
+              )}
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
@@ -203,6 +295,10 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.gray,
     lineHeight: 24,
+  },
+  emailText: {
+    color: Colors.secondary,
+    fontWeight: '600',
   },
   otpContainer: {
     flexDirection: 'row',

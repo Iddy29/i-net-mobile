@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, FontAwesome6 } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 
@@ -21,9 +21,20 @@ interface ServiceIconProps {
   type: ServiceIconType;
   size?: number;
   color?: string;
+  iconImage?: string;
 }
 
-export function ServiceIcon({ type, size = 24, color }: ServiceIconProps) {
+export function ServiceIcon({ type, size = 24, color, iconImage }: ServiceIconProps) {
+  // If a custom image icon URL is provided, render it as an image
+  if (iconImage) {
+    return (
+      <Image
+        source={{ uri: iconImage }}
+        style={{ width: size, height: size, borderRadius: size * 0.2 }}
+        resizeMode="cover"
+      />
+    );
+  }
   const iconColor = color || Colors.dark;
 
   switch (type) {

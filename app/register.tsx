@@ -9,6 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -17,6 +19,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '@/constants/theme';
+import { authAPI } from '@/services/api';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -28,16 +31,60 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleBack = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.back();
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Navigate to OTP verification
-    router.push('/otp-verify');
+
+    // Client-side validation
+    if (!fullName.trim() || !email.trim() || !phone.trim() || !password || !confirmPassword) {
+      Alert.alert('Missing Fields', 'Please fill in all fields.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Password Mismatch', 'Passwords do not match.');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Weak Password', 'Password must be at least 6 characters.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await authAPI.register({
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        password,
+        confirmPassword,
+      });
+
+      if (response.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // Navigate to OTP verification, passing the email
+        router.push({
+          pathname: '/otp-verify',
+          params: { email: email.trim().toLowerCase() },
+        });
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('Registration Failed', response.message);
+      }
+    } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLogin = () => {
@@ -85,6 +132,7 @@ export default function RegisterScreen() {
                 value={fullName}
                 onChangeText={setFullName}
                 autoCapitalize="words"
+                editable={!isLoading}
               />
             </View>
 
@@ -101,6 +149,7 @@ export default function RegisterScreen() {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                editable={!isLoading}
               />
             </View>
 
@@ -116,6 +165,7 @@ export default function RegisterScreen() {
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
+                editable={!isLoading}
               />
             </View>
 
@@ -132,6 +182,7 @@ export default function RegisterScreen() {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                editable={!isLoading}
               />
               <TouchableOpacity
                 style={styles.eyeIcon}
@@ -158,6 +209,7 @@ export default function RegisterScreen() {
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
                 autoCapitalize="none"
+                editable={!isLoading}
               />
               <TouchableOpacity
                 style={styles.eyeIcon}
@@ -172,14 +224,23 @@ export default function RegisterScreen() {
             </View>
 
             {/* Register Button */}
-            <TouchableOpacity onPress={handleRegister} activeOpacity={0.9} style={styles.buttonWrapper}>
+            <TouchableOpacity
+              onPress={handleRegister}
+              activeOpacity={0.9}
+              style={[styles.buttonWrapper, isLoading && styles.buttonDisabled]}
+              disabled={isLoading}
+            >
               <LinearGradient
                 colors={[Colors.secondary, '#0891B2']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.button}
               >
-                <Text style={styles.buttonText}>Register</Text>
+                {isLoading ? (
+                  <ActivityIndicator color={Colors.white} size="small" />
+                ) : (
+                  <Text style={styles.buttonText}>Register</Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
 
@@ -267,6 +328,9 @@ const styles = StyleSheet.create({
   },
   buttonWrapper: {
     marginTop: Spacing.lg,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   button: {
     paddingVertical: Spacing.md + 2,
